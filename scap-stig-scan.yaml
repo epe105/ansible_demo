@@ -1,7 +1,7 @@
 
 ---
 - name: SCAP STIG Compliance Scanning
-  hosts: tags_stig_compliance
+  hosts: all
   become: yes
   vars:
     scan_results_dir: "/opt/scap-results"
