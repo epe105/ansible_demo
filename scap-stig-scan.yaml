@@ -112,12 +112,12 @@
         flat: yes
       loop:
         - "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
-      register: fetch-report
+      register: fetchreport
       when: scap_file_check.stat.exists and scan_result.rc is defined
  
     - name: Print fetch-report
       ansible.builtin.debug:
-        var: fetch-report
+        var: fetchreport
         
 # ========= NEW PLAY: publish to existing web server =========
 # - name: Publish SCAP reports to web server
