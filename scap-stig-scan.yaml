@@ -8,6 +8,16 @@
     timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
     
   tasks:
+    - name: Install Apache HTTPD package
+      yum:
+        name: httpd
+        state: present
+
+    - name: Ensure Apache is enabled and running
+      service:
+        name: httpd
+        state: started
+        enabled: yes
     - name: Install OpenSCAP packages
       dnf:
         name:
