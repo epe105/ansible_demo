@@ -111,28 +111,31 @@
         dest: "./scap-results/"
         flat: yes
       loop:
-        - "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml"
         - "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
+      register: fetch-report
       when: scap_file_check.stat.exists and scan_result.rc is defined
  
- 
+    - name: Print fetch-report
+      ansible.builtin.debug:
+        var: fetch-report
+        
 # ========= NEW PLAY: publish to existing web server =========
-- name: Publish SCAP reports to web server
-  hosts: "{{ report_server }}"
-  vars:
-    ansible_become_user: root
-    ansible_become_password: "{{ webadmin_password }}"
-    ansible_become_method: sudo
-    report_server: PRESIDIOLAB.ORLANDO.WEBSERV
-    web_path: /var/www/html/reports/
-    # re-use your connection vars if you already set them in other playbooks:
-    ansible_user: "{{ webadmin }}"
-    ansible_ssh_pass: "{{ webadmin_password }}"
-  tasks:
-    - name: Copy all fetched SCAP HTML reports to web path
-      copy:
-        src: "{{ item }}"
-        dest: "{{ web_path }}/"
-        mode: '0644'
-      with_fileglob:
-        - "./scap-results/stig-report-{{ timestamp }}.html"
+# - name: Publish SCAP reports to web server
+#   hosts: "{{ report_server }}"
+#   vars:
+#     ansible_become_user: root
+#     ansible_become_password: "{{ webadmin_password }}"
+#     ansible_become_method: sudo
+#     report_server: PRESIDIOLAB.ORLANDO.WEBSERV
+#     web_path: /var/www/html/reports/
+#     # re-use your connection vars if you already set them in other playbooks:
+#     ansible_user: "{{ webadmin }}"
+#     ansible_ssh_pass: "{{ webadmin_password }}"
+#   tasks:
+#     - name: Copy all fetched SCAP HTML reports to web path
+#       copy:
+#         src: "{{ item }}"
+#         dest: "{{ web_path }}/"
+#         mode: '0644'
+#       with_fileglob:
+#         - "./scap-results/stig-report-{{ timestamp }}.html"
