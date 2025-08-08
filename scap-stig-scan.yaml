@@ -111,8 +111,8 @@
         dest: "./scap-results/"
         flat: yes
       loop:
-        - "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}-{{ timestamp }}.xml"
-        - "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}-{{ timestamp }}.html"
+        - "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml"
+        - "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
       when: scap_file_check.stat.exists and scan_result.rc is defined
  
  
