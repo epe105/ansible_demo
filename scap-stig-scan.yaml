@@ -105,42 +105,8 @@
         state: present
       when: scap_file_check.stat.exists
 
-    - name: Fetch HTML report to controller
-      fetch:
-        src: "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
-        dest: "./scap-results/"
-        flat: yes
-      register: fetched
-      when: scap_file_check.stat.exists and scan_result.rc is defined
- 
-    - name: Make fetched HTML path(s) available to later plays
-      set_stats:
-        per_host: no
-        data:
-          scap_report_files: >-
-            {{ (scap_report_files | default([]))
-               + (fetched.results | map(attribute='dest') | list) }}
-      when: fetched is defined
- 
-        
-#========= NEW PLAY: publish to existing web server =========
-- name: Publish SCAP reports to web server
-  hosts: "{{ report_server }}"
-  vars:
-    ansible_become_user: root
-    ansible_become_password: "{{ webadmin_password }}"
-    ansible_become_method: sudo
-    report_server: PRESIDIOLAB.ORLANDO.WEBSERV
-    web_path: /var/www/html/reports/
-    # re-use your connection vars if you already set them in other playbooks:
-    ansible_user: "{{ webadmin }}"
-    ansible_ssh_pass: "{{ webadmin_password }}"
-  tasks:
-    - name: Copy reports from controller to web server
+    - name: Copy HTML report to controller
       copy:
-        src: "{{ item }}"
-        dest: "{{ web_path }}/"
-        mode: '0644'
-      loop: "{{ scap_report_files | default([]) }}"
-      run_once: true
- 
+        src: "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
+        dest: "/var/www/html/stig-report-{{ timestamp }}.html"
+      when: scap_file_check.stat.exists and scan_result.rc is defined
