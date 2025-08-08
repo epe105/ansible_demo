@@ -2,6 +2,7 @@
 ---
 - name: SCAP STIG Compliance Scanning
   hosts: all
+  become: yes
   vars:
     scan_results_dir: "/opt/scap-results"
     timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
