@@ -107,7 +107,7 @@
 
     - name: Fetch HTML report to controller
       fetch:
-        src: "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}-{{ timestamp }}.html"
+        src: "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
         dest: "./scap-results/"
         flat: yes
       register: fetched
