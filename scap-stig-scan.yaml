@@ -11,13 +11,14 @@
     - name: Install Apache HTTPD package
       yum:
         name: httpd
-        state: present
+        state: installed
 
     - name: Ensure Apache is enabled and running
       service:
         name: httpd
         state: started
         enabled: yes
+
     - name: Install OpenSCAP packages
       dnf:
         name:
