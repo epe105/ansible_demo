@@ -104,3 +104,32 @@
         job: "oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_stig --results {{ scan_results_dir }}/monthly-stig-results.xml --report {{ scan_results_dir }}/monthly-stig-report.html {{ scap_content_file }}"
         state: present
       when: scap_file_check.stat.exists
+
+    - name: Fetch results to controller
+      fetch:
+        src: "{{ item }}"
+        dest: "./scap-results/"
+        flat: yes
+      loop:
+        - "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}-{{ timestamp }}.xml"
+        - "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}-{{ timestamp }}.html"
+      when: scap_file_check.stat.exists and scan_result.rc is defined
+ 
+ 
+# ========= NEW PLAY: publish to existing web server =========
+- name: Publish SCAP reports to web server
+  hosts: "{{ report_server }}"
+  vars:
+    report_server: PRESIDIOLAB.ORLANDO.WEBSERV
+    web_path: /var/www/html/reports/
+    # re-use your connection vars if you already set them in other playbooks:
+    ansible_user: "{{ webadmin }}"
+    ansible_ssh_pass: "{{ webadmin_password }}"
+  tasks:
+    - name: Copy all fetched SCAP HTML reports to web path
+      copy:
+        src: "{{ item }}"
+        dest: "{{ web_path }}/"
+        mode: '0644'
+      with_fileglob:
+        - "./scap-results/stig-report-*-{{ timestamp }}.html"
