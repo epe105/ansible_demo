@@ -120,6 +120,9 @@
 - name: Publish SCAP reports to web server
   hosts: "{{ report_server }}"
   vars:
+    ansible_become_user: root
+    ansible_become_password: "{{ webadmin_password }}"
+    ansible_become_method: sudo
     report_server: PRESIDIOLAB.ORLANDO.WEBSERV
     web_path: /var/www/html/reports/
     # re-use your connection vars if you already set them in other playbooks:
@@ -132,4 +135,4 @@
         dest: "{{ web_path }}/"
         mode: '0644'
       with_fileglob:
-        - "./scap-results/stig-report-*-{{ timestamp }}.html"
+        - "./scap-results/stig-report-{{ timestamp }}.html"
