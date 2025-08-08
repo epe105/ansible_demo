@@ -9,15 +9,15 @@
     
   tasks:
     - name: Install Apache HTTPD package
-      yum:
+      ansible.builtin.package:
         name: httpd
-        state: installed
+        state: present # Ensures the package is installed
 
     - name: Ensure Apache is enabled and running
-      service:
+      ansible.builtin.service:
         name: httpd
-        state: started
-        enabled: yes
+        state: started # Ensures the service is running
+        enabled: yes # Ensures the service starts on boot
 
     - name: Install OpenSCAP packages
       dnf:
