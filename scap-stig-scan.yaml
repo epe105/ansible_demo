@@ -109,4 +109,6 @@
       copy:
         src: "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
         dest: "/var/www/html/stig-report-{{ timestamp }}.html"
+        remote_src: yes
+        mode: '0644'
       when: scap_file_check.stat.exists and scan_result.rc is defined
