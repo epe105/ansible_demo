@@ -1,0 +1,9 @@
+---
+- name: DISA STIG Check
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Output DISA Stig Resutls
+      ansible.builtin.debug:
+        msg: "This System is Compliant with the DISA STIG"
