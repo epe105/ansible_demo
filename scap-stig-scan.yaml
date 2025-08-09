@@ -67,8 +67,8 @@
       shell: |
         oscap xccdf eval \
           --profile xccdf_org.ssgproject.content_profile_stig \
-          --results "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml" \
-          --report "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html" \
+          --results "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml" \
+          --report "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html" \
           --oval-results \
           "{{ scap_content_file }}"
       register: scan_result
@@ -79,19 +79,19 @@
       debug:
         msg: |
           SCAP Scan completed
-          Results: {{ scan_results_dir }}/stig-results-{{ timestamp }}.xml
-          Report: {{ scan_results_dir }}/stig-report-{{ timestamp }}.html
+          Results: {{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml
+          Report: {{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html
           Exit code: {{ scan_result.rc }}
       when: scap_file_check.stat.exists
 
     - name: Generate compliance summary
       shell: |
-        oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml" > "{{ scan_results_dir }}/compliance-summary-{{ timestamp }}.html"
+        oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml" > "{{ scan_results_dir }}/compliance-summary-{{ inventory_hostname }}.html"
       when: scap_file_check.stat.exists and scan_result.rc is defined
 
     - name: Extract pass/fail counts
       shell: |
-        oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml" | grep -E "(pass|fail|notapplicable|notchecked)" | wc -l
+        oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml" | grep -E "(pass|fail|notapplicable|notchecked)" | wc -l
       register: compliance_stats
       when: scap_file_check.stat.exists and scan_result.rc is defined
 
@@ -101,8 +101,8 @@
         dest: "./scap-results/"
         flat: yes
       loop:
-        - "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml"
-        - "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
+        - "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml"
+        - "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html"
       when: scap_file_check.stat.exists and scan_result.rc is defined
 
     - name: Schedule regular scans (optional)
@@ -163,5 +163,4 @@
         src: /runner/project/scap-results/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html    # e.g. /runner/project/scap-results/stig-report-20250808T164206.html
         dest: "{{ web_path }}"
         mode: '0644'
-      
       run_once: true              
