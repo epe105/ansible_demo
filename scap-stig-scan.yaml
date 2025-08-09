@@ -145,7 +145,7 @@
 
     - name: Read HTML report
       ansible.builtin.slurp:
-        src: /runner/project/scap-results/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html
+        src: /opt/scap-results/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html
       register: html_file
 
     - name: Print HTML report to debug log
