@@ -142,12 +142,15 @@
           scap_report_files: >-
             {{ (scap_report_files | default([]))
               + (fetched.results | default([]) | map(attribute='dest') | list) }}
-              
+
 - name: Publish SCAP reports to web server
   hosts: "{{ report_server }}"
   vars:
     report_server: PRESIDIOLAB.ORLANDO.WEBSERV
     web_path: /var/www/html/reports/
+    ansible_become_user: root
+    ansible_become_password: "{{ webadmin_password }}"
+    ansible_become_method: sudo
   tasks:
     - name: Copy reports from controller to web server
       copy:
