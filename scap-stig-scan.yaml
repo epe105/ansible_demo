@@ -167,4 +167,13 @@
 
     - name: Display link to Linux patch report  
       ansible.builtin.debug:    
-        msg: "Please go to http://{{ hostvars[report_server]['ansible_host'] }}/reports/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html"              
+        msg: "Please go to http://{{ hostvars[report_server]['ansible_host'] }}/reports/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html"
+
+    - name: Read HTML report
+      ansible.builtin.slurp:
+        src: /runner/project/scap-results/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html
+      register: html_file
+
+    - name: Print HTML report to debug log
+      ansible.builtin.debug:
+        msg: "{{ html_file.content | b64decode }}"              
