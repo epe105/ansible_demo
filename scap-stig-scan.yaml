@@ -167,4 +167,4 @@
 
     - name: Display link to Linux patch report  
       ansible.builtin.debug:    
-        msg: "Please go to http://{{ hostvars[report_server]['ansible_host'] }}/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html"              
+        msg: "Please go to http://{{ hostvars[report_server]['ansible_host'] }}/reports/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html"              
