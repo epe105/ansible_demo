@@ -1,24 +1,23 @@
 
 ---
 - name: SCAP STIG Compliance Scanning
-  hosts: all
+  hosts: "{{ server_group }}"
   become: yes
   vars:
     scan_results_dir: "/opt/scap-results"
     timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
     
   tasks:
-    - name: Install Apache HTTPD package
-      ansible.builtin.package:
-        name: httpd
-        state: present # Ensures the package is installed
+    # - name: Install Apache HTTPD package
+    #   ansible.builtin.package:
+    #     name: httpd
+    #     state: present # Ensures the package is installed
 
-    - name: Ensure Apache is enabled and running
-      ansible.builtin.service:
-        name: httpd
-        state: started # Ensures the service is running
-        enabled: yes # Ensures the service starts on boot
-
+    # - name: Ensure Apache is enabled and running
+    #   ansible.builtin.service:
+    #     name: httpd
+    #     state: started # Ensures the service is running
+    #     enabled: yes # Ensures the service starts on boot
     - name: Install OpenSCAP packages
       dnf:
         name:
@@ -116,10 +115,44 @@
         state: present
       when: scap_file_check.stat.exists
 
-    - name: Copy HTML report to controller
+    # - name: Copy HTML report to controller
+    #   copy:
+    #     src: "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
+    #     dest: "/var/www/html/stig-report-{{ timestamp }}.html"
+    #     remote_src: yes
+    #     mode: '0644'
+    #   when: scap_file_check.stat.exists and scan_result.rc is defined
+
+    - name: Fetch HTML report(s) to controller
+      fetch:
+        src: "{{ item }}"
+        dest: "./scap-results/"
+        flat: yes
+      loop:
+        - "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
+      register: fetched
+      when:
+        - scap_file_check.stat.exists
+        - scan_result.rc is defined
+    
+    - name: Append fetched HTML path(s) to global list
+      set_stats:
+        per_host: no
+        data:
+          scap_report_files: >-
+            {{ (scap_report_files | default([]))
+              + (fetched.results | default([]) | map(attribute='dest') | list) }}
+              
+- name: Publish SCAP reports to web server
+  hosts: "{{ report_server }}"
+  vars:
+    report_server: PRESIDIOLAB.ORLANDO.WEBSERV
+    web_path: /var/www/html/reports/
+  tasks:
+    - name: Copy reports from controller to web server
       copy:
-        src: "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
-        dest: "/var/www/html/stig-report-{{ timestamp }}.html"
-        remote_src: yes
+        src: "{{ item }}"    # e.g. /runner/project/scap-results/stig-report-20250808T164206.html
+        dest: "{{ web_path }}/"
         mode: '0644'
-      when: scap_file_check.stat.exists and scan_result.rc is defined
+      loop: "{{ scap_report_files | default([]) }}"
+      run_once: true              
