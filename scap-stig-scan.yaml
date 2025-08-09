@@ -143,6 +143,15 @@
             {{ (scap_report_files | default([]))
               + (fetched.results | default([]) | map(attribute='dest') | list) }}
 
+    - name: Read HTML report
+      ansible.builtin.slurp:
+        src: /runner/project/scap-results/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html
+      register: html_file
+
+    - name: Print HTML report to debug log
+      ansible.builtin.debug:
+        msg: "{{ html_file.content | b64decode }}"    
+
 - name: Publish SCAP reports to web server
   hosts: "{{ report_server }}"
   vars:
@@ -169,11 +178,4 @@
       ansible.builtin.debug:    
         msg: "Please go to http://{{ hostvars[report_server]['ansible_host'] }}/reports/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html"
 
-    - name: Read HTML report
-      ansible.builtin.slurp:
-        src: /runner/project/scap-results/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html
-      register: html_file
-
-    - name: Print HTML report to debug log
-      ansible.builtin.debug:
-        msg: "{{ html_file.content | b64decode }}"              
+          
