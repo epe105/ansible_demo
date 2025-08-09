@@ -151,6 +151,8 @@
     ansible_become_user: root
     ansible_become_password: "{{ webadmin_password }}"
     ansible_become_method: sudo
+    ansible_user: "{{ webadmin }}"
+    ansible_ssh_pass: "{{ webadmin_password }}"
   tasks:
     - name: Copy reports from controller to web server
       copy:
