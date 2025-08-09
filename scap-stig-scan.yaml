@@ -154,6 +154,10 @@
     ansible_user: "{{ webadmin }}"
     ansible_ssh_pass: "{{ webadmin_password }}"
   tasks:
+    - debug:
+        msg: "scap_report_files = {{ scap_report_files | default([]) }}"
+      run_once: true
+
     - name: Copy reports from controller to web server
       copy:
         src: "{{ item }}"    # e.g. /runner/project/scap-results/stig-report-20250808T164206.html
