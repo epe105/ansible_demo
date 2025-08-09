@@ -163,4 +163,8 @@
         src: /runner/project/scap-results/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html    # e.g. /runner/project/scap-results/stig-report-20250808T164206.html
         dest: "{{ web_path }}"
         mode: '0644'
-      run_once: true              
+      run_once: true
+
+    - name: Display link to Linux patch report  
+      ansible.builtin.debug:    
+        msg: "Please go to http://{{ hostvars[report_server]['ansible_host'] }}/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html"              
