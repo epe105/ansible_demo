@@ -131,9 +131,9 @@
       loop:
         - "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
       register: fetched
-      when:
-        - scap_file_check.stat.exists
-        - scan_result.rc is defined
+      #when:
+      #  - scap_file_check.stat.exists
+      #  - scan_result.rc is defined
     
     - name: Append fetched HTML path(s) to global list
       set_stats:
