@@ -1,4 +1,4 @@
- 
+
 ---
 - name: SCAP STIG Compliance Scanning
   hosts: "{{ server_group }}"
@@ -12,7 +12,7 @@
     #   ansible.builtin.package:
     #     name: httpd
     #     state: present # Ensures the package is installed
- 
+
     # - name: Ensure Apache is enabled and running
     #   ansible.builtin.service:
     #     name: httpd
@@ -25,44 +25,44 @@
           - scap-security-guide
           - openscap-utils
         state: present
- 
+
     - name: Create results directory
       file:
         path: "{{ scan_results_dir }}"
         state: directory
         mode: '0755'
- 
+
     - name: Check available SCAP content
       find:
         paths: /usr/share/xml/scap/ssg/content/
         patterns: "ssg-rhel*-ds.xml"
       register: scap_content
- 
+
     - name: Display available SCAP content
       debug:
         msg: "Available SCAP content: {{ scap_content.files | map(attribute='path') | list }}"
- 
+
     - name: Determine RHEL version for SCAP content
       set_fact:
         rhel_version: "{{ ansible_distribution_major_version }}"
         scap_content_file: "/usr/share/xml/scap/ssg/content/ssg-rhel{{ ansible_distribution_major_version }}-ds.xml"
- 
+
     - name: Check if SCAP content exists
       stat:
         path: "{{ scap_content_file }}"
       register: scap_file_check
- 
+
     - name: List available STIG profiles
       shell: |
         oscap info "{{ scap_content_file }}" | grep -i stig
       register: stig_profiles
       when: scap_file_check.stat.exists
- 
+
     - name: Display available STIG profiles
       debug:
         msg: "{{ stig_profiles.stdout_lines }}"
       when: scap_file_check.stat.exists
- 
+
     - name: Run STIG compliance scan
       shell: |
         oscap xccdf eval \
@@ -74,7 +74,7 @@
       register: scan_result
       failed_when: false
       when: scap_file_check.stat.exists
- 
+
     - name: Display scan summary
       debug:
         msg: |
@@ -83,18 +83,18 @@
           Report: {{ scan_results_dir }}/stig-report-{{ timestamp }}.html
           Exit code: {{ scan_result.rc }}
       when: scap_file_check.stat.exists
- 
+
     - name: Generate compliance summary
       shell: |
         oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml" > "{{ scan_results_dir }}/compliance-summary-{{ timestamp }}.html"
       when: scap_file_check.stat.exists and scan_result.rc is defined
- 
+
     - name: Extract pass/fail counts
       shell: |
         oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml" | grep -E "(pass|fail|notapplicable|notchecked)" | wc -l
       register: compliance_stats
       when: scap_file_check.stat.exists and scan_result.rc is defined
- 
+
     - name: Copy results to local machine (optional)
       fetch:
         src: "{{ item }}"
@@ -104,7 +104,7 @@
         - "{{ scan_results_dir }}/stig-results-{{ timestamp }}.xml"
         - "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
       when: scap_file_check.stat.exists and scan_result.rc is defined
- 
+
     - name: Schedule regular scans (optional)
       cron:
         name: "SCAP STIG compliance scan"
@@ -114,7 +114,7 @@
         job: "oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_stig --results {{ scan_results_dir }}/monthly-stig-results.xml --report {{ scan_results_dir }}/monthly-stig-report.html {{ scap_content_file }}"
         state: present
       when: scap_file_check.stat.exists
- 
+
     # - name: Copy HTML report to controller
     #   copy:
     #     src: "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
@@ -122,54 +122,27 @@
     #     remote_src: yes
     #     mode: '0644'
     #   when: scap_file_check.stat.exists and scan_result.rc is defined
- 
+
     - name: Fetch HTML report(s) to controller
       fetch:
         src: "{{ item }}"
         dest: "./scap-results/"
         flat: yes
       loop:
-        - "{{ scan_results_dir }}/stig-report-{{ timestamp }}.html"
+        - "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html"
       register: fetched
       #when:
       #  - scap_file_check.stat.exists
       #  - scan_result.rc is defined
     
-    - name: Debug fetched results
-      debug:
-        msg: "fetched.results: {{ fetched.results }}"
-      run_once: true
-    
-    - name: Extract fetched file paths
-      set_fact:
-        fetched_files: "{{ fetched.results | map(attribute='dest') | list }}"
-      run_once: true
-    
-    - name: Debug fetched files
-      debug:
-        msg: "fetched_files: {{ fetched_files }}"
-      run_once: true
-    
-    - name: Write fetched file paths to temporary file
-      copy:
-        content: "{{ fetched_files | to_json }}"
-        dest: "/tmp/scap_report_files.json"
-      run_once: true
-      delegate_to: localhost
-    
-    - name: Set global scap report files
+    - name: Append fetched HTML path(s) to global list
       set_stats:
         per_host: no
         data:
-          scap_report_files: "{{ fetched_files }}"
-    
-    - name: Clean up temporary file
-      file:
-        path: "/tmp/scap_report_files.json"
-        state: absent
-      run_once: true
-      delegate_to: localhost
- 
+          scap_report_files: >-
+            {{ (scap_report_files | default([]))
+              + (fetched.results | default([]) | map(attribute='dest') | list) }}
+
 - name: Publish SCAP reports to web server
   hosts: "{{ report_server }}"
   vars:
@@ -184,39 +157,11 @@
     - debug:
         msg: "scap_report_files = {{ scap_report_files | default([]) }}"
       run_once: true
- 
-    - name: Read fetched file paths from temporary file
-      slurp:
-        src: "/tmp/scap_report_files.json"
-      register: scap_files_data
-      run_once: true
-      delegate_to: localhost
-      when: scap_report_files | default([]) | length == 0
- 
-    - name: Set scap_report_files from file
-      set_fact:
-        scap_report_files: "{{ scap_files_data.content | b64decode | from_json }}"
-      run_once: true
-      when: scap_files_data is defined and scap_report_files | default([]) | length == 0
- 
-    - name: Debug final scap_report_files
-      debug:
-        msg: "Final scap_report_files = {{ scap_report_files | default([]) }}"
-      run_once: true
- 
+
     - name: Copy reports from controller to web server
       copy:
-        src: "{{ item }}"    # e.g. /runner/project/scap-results/stig-report-20250808T164206.html
-        dest: "{{ web_path }}/"
+        src: /runner/project/scap-results/stig-report-PRESIDIOLAB.ORLANDO.STIG_SERVER.html    # e.g. /runner/project/scap-results/stig-report-20250808T164206.html
+        dest: "{{ web_path }}"
         mode: '0644'
-      loop: "{{ scap_report_files | default([]) }}"
-      run_once: true
-      when: scap_report_files | default([]) | length > 0
-    
-    - name: Final cleanup of temporary file
-      file:
-        path: "/tmp/scap_report_files.json"
-        state: absent
-      run_once: true
-      delegate_to: localhost
-      ignore_errors: yes          
+      
+      run_once: true              
