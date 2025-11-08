@@ -8,7 +8,7 @@
     - vars/azure_vars.yaml
 
   vars:
-    azure_region: useast   # 👈 Set region here (can override with -e)
+    azure_region: eastus   # 👈 Set region here (can override with -e)
 
   tasks:
     - name: Create resource group
