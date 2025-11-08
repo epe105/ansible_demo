@@ -8,13 +8,13 @@
     - vars/azure_vars.yaml
 
   vars:
-    azure_region: westus2   # 👈 Set region here (can override with -e)
+    azure_region: useast   # 👈 Set region here (can override with -e)
 
   tasks:
     - name: Create resource group
       azure_rm_resourcegroup:
         name: "{{ resource_group }}"
-        location: eastus
+        location: "{{ azure_region }}"
         tags:
           owner: "{{ owner }}"
 
