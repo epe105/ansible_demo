@@ -88,6 +88,7 @@
         admin_password: "{{ admin_password }}"
         ssh_password_enabled: true
         network_interfaces: "{{ vm_name }}-vnic"
+        managed_disk_type: Standard_LRS
         image:
           offer: RHEL
           publisher: RedHat
