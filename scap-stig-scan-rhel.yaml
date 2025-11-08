@@ -1,0 +1,109 @@
+
+---
+- name: SCAP STIG Compliance Scanning
+  hosts: "{{ server_group }}"
+  become: yes
+  vars:
+    scan_results_dir: "/opt/scap-results"
+    web_publish_dir: "/var/www/html"
+    timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+    
+  tasks:
+    # - name: Install Apache HTTPD package
+    #   ansible.builtin.package:
+    #     name: httpd
+    #     state: present # Ensures the package is installed
+
+    # - name: Ensure Apache is enabled and running
+    #   ansible.builtin.service:
+    #     name: httpd
+    #     state: started # Ensures the service is running
+    #     enabled: yes # Ensures the service starts on boot
+    - name: Install OpenSCAP packages
+      dnf:
+        name:
+          - openscap-scanner
+          - scap-security-guide
+          - openscap-utils
+        state: present
+
+    - name: Create results directory
+      file:
+        path: "{{ scan_results_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check available SCAP content
+      find:
+        paths: /usr/share/xml/scap/ssg/content/
+        patterns: "ssg-rhel*-ds.xml"
+      register: scap_content
+
+    - name: Display available SCAP content
+      debug:
+        msg: "Available SCAP content: {{ scap_content.files | map(attribute='path') | list }}"
+
+    - name: Determine RHEL version for SCAP content
+      set_fact:
+        rhel_version: "{{ ansible_distribution_major_version }}"
+        scap_content_file: "/usr/share/xml/scap/ssg/content/ssg-rhel{{ ansible_distribution_major_version }}-ds.xml"
+
+    - name: Check if SCAP content exists
+      stat:
+        path: "{{ scap_content_file }}"
+      register: scap_file_check
+
+    - name: List available STIG profiles
+      shell: |
+        oscap info "{{ scap_content_file }}" | grep -i stig
+      register: stig_profiles
+      when: scap_file_check.stat.exists
+
+    - name: Display available STIG profiles
+      debug:
+        msg: "{{ stig_profiles.stdout_lines }}"
+      when: scap_file_check.stat.exists
+
+    - name: Run STIG compliance scan
+      shell: |
+        oscap xccdf eval \
+          --profile xccdf_org.ssgproject.content_profile_stig \
+          --results "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml" \
+          --report "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html" \
+          --oval-results \
+          "{{ scap_content_file }}"
+      register: scan_result
+      failed_when: false
+      when: scap_file_check.stat.exists
+
+    - name: Display scan summary
+      debug:
+        msg: |
+          SCAP Scan completed
+          Results: {{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml
+          Report: {{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html
+          Exit code: {{ scan_result.rc }}
+      when: scap_file_check.stat.exists
+
+    - name: Generate compliance summary
+      shell: |
+        oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml" > "{{ scan_results_dir }}/compliance-summary-{{ inventory_hostname }}.html"
+      when: scap_file_check.stat.exists and scan_result.rc is defined
+
+    - name: Extract pass/fail counts
+      shell: |
+        oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml" | grep -E "(pass|fail|notapplicable|notchecked)" | wc -l
+      register: compliance_stats
+      when: scap_file_check.stat.exists and scan_result.rc is defined
+
+    - name: Copy HTML report to Apache web directory
+      ansible.builtin.copy:
+        src: "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html"
+        dest: "{{ web_publish_dir }}/stig-report-{{ inventory_hostname }}.html"
+        remote_src: yes
+        mode: '0644'
+      when: scap_file_check.stat.exists and scan_result.rc is defined
+
+    - name: Display published report URL
+      ansible.builtin.debug:
+        msg: "Report published at http://{{ ansible_host }}/stig-report-{{ inventory_hostname }}.html"
