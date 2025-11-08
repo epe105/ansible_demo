@@ -25,7 +25,14 @@
           - openscap-scanner
           - scap-security-guide
           - openscap-utils
+          - httpd
         state: present
+
+    - name: Ensure Apache is enabled and running
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: yes
 
     - name: Create results directory
       file:
