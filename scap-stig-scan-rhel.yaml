@@ -103,6 +103,12 @@
       register: compliance_stats
       when: scap_file_check.stat.exists and scan_result.rc is defined
 
+    - name: Generate HTML report from SCAP results
+      shell: |
+        oscap xccdf generate report "{{ scan_results_dir }}/stig-results-{{ inventory_hostname }}.xml" \
+          > "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html"
+      when: scap_file_check.stat.exists and scan_result.rc is defined
+
     - name: Copy HTML report to Apache web directory
       ansible.builtin.copy:
         src: "{{ scan_results_dir }}/stig-report-{{ inventory_hostname }}.html"
